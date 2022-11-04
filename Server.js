@@ -12,7 +12,8 @@ app.use(cors())
 //Importing Routes
 const userRoutes = require('./Routes/user.routes');
 const outletRoutes = require('./Routes/outlet.routes');
-
+const orderRoutes = require('./Routes/order.routes')
+ 
 //Passport middleware
 app.use(passport.initialize());
 
@@ -22,6 +23,7 @@ require('./Routes/Config/passport')(passport);
 //Routes
 app.use('/api',userRoutes);
 app.use('/api',outletRoutes);
+app.use('/api',orderRoutes)
 
 
 app.listen(process.env.PORT,()=>{

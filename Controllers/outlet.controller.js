@@ -1,6 +1,6 @@
 
 const { PrismaClient } = require("@prisma/client");
-const { user, outlet, menu, menuItem, customerTable } = new PrismaClient();
+const { user, outlet, menu, menuItem, customerTable ,orderItem} = new PrismaClient();
 
 
 //createOutlet
@@ -245,12 +245,6 @@ exports.getOutletById = async (req, res) => {
 }
 
 
-
-
-
-
-
-
 //deleteWorker
 exports.deleteWorker = async (req, res) => {
     const { userId, outletId } = req.body;
@@ -418,7 +412,7 @@ exports.AddTable = async (req, res) => {
             data: {
                 customerTable: {
                     create: {
-                        Name: Math.random().toString()
+                        Name: req.body.name.toString()
                     }
                 }
             },
@@ -460,11 +454,26 @@ exports.GetTable = async (req, res) => {
 
 exports.DeleteTable = async (req, res) => {
     try {
+        
         const Table = await customerTable.delete({
                 where : {
-                     id : req.body.id
-                } 
+                     id : req.body.id,
+                     
+                },
+                select : {
+                    id : true,
+                    OrderItem : true
+                }
+        }) 
+
+        Table?.OrderItem?.map(async (ele) => {
+            await orderItem.delete({
+                where : {
+                    id : `${ele.id}`
+                }
+            })
         })
+
         if(Table) {
             return res.status(200).json({message: "Sucessful" });
         }else {
@@ -477,15 +486,7 @@ exports.DeleteTable = async (req, res) => {
 }
 
 
-//AddOrder 
-exports.AddOrder = async (req, res) => {
 
-}
-
-//DeleteOrder 
-exports.DeleteOrder = async (req, res) => {
-
-}
 
 //generateBills
 exports.GenerateBills = async (req, res) => {
