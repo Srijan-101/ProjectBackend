@@ -1,0 +1,117 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String  @id @default(uuid())
+  firstName         String
+  lastName          String
+  role              String
+  phoneNumber       String?
+  password          String
+  email             String  @unique
+  isActivate        Boolean @default(false)
+  resetPasswordLink String
+  Post              String?
+
+  //Relation fields
+  tokens   Token[]
+  Outlet   Outlet? @relation(fields: [outletId], references: [id])
+  outletId String?
+}
+
+model Token {
+  id         String    @id @default(uuid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  type       TokenType
+  emailToken String?   @unique
+  valid      Boolean   @default(true)
+
+  //Relation fields
+  User   User?   @relation(fields: [userId], references: [id])
+  userId String?
+}
+
+model Outlet {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  outletName String? @unique
+  location   String
+  phone      String
+
+  Worker        User[]
+  Sales         Sales[]
+  customerTable customerTable[]
+
+  Menu   Menu?   @relation(fields: [menuId], references: [id])
+  menuId String?
+}
+
+model Sales {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  saleAmount Int
+  Outlet     Outlet? @relation(fields: [outletId], references: [id])
+  outletId   String?
+}
+
+model MenuItem {
+  id       String  @id @default(uuid())
+  Name     String
+  Category String
+  price    Int
+
+  Status   String
+  Menu     Menu?   @relation(fields: [menuId], references: [id])
+  menuId   String?
+}
+
+model Menu {
+  id       String     @id @default(uuid())
+  MenuItem MenuItem[]
+  Outlet   Outlet[]
+}
+
+model customerTable {
+  id           String      @id @default(uuid())
+  Name         String
+  BillAmount   BillAmount? @relation(fields: [billAmountId], references: [id])
+  OrderItem    OrderItem[]
+  billAmountId String?
+
+  Outlet   Outlet? @relation(fields: [outletId], references: [id])
+  outletId String?
+}
+
+model BillAmount {
+  id            String          @id @default(uuid())
+  totalAmount   Int
+  customerTable customerTable[]
+}
+
+model OrderItem {
+  id       String @id @default(uuid())
+  Name     String
+  Category String
+  Qty      Int
+  price    Int
+
+  customerTable   customerTable? @relation(fields: [customerTableId], references: [id])
+  customerTableId String?
+}
+
+enum TokenType {
+  EMAILVerify
+}
