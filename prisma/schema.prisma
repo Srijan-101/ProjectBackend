@@ -49,6 +49,7 @@ model Outlet {
   outletName String? @unique
   location   String
   phone      String
+  AdminId    String
 
   Worker        User[]
   Sales         Sales[]
@@ -61,8 +62,11 @@ model Outlet {
 model Sales {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
-
-  saleAmount Int
+  
+  PaymentMethod String?
+  ReceiptNo String?
+  
+  SaleAmount Float
   Outlet     Outlet? @relation(fields: [outletId], references: [id])
   outletId   String?
 }

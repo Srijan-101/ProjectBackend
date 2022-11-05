@@ -20,8 +20,8 @@ exports.userValidator = [
         .withMessage('Invalid email address'),
 
     body('password')
-        .isLength({min:6})
-        .withMessage('Password must contains minimum 2')
+        .isLength({min:7})
+        .withMessage('Password must contains minimum 8 characters')
 ]
 
 

@@ -3,7 +3,13 @@ const {createOutlet,getAllOutlet,getAllWorkerDetails,AddWorker,getOutletNumber,g
 
 const passport = require('passport');
 
-Router.post('/CreateOutlet',passport.authenticate('jwt',{session:false}),createOutlet);
+
+const { runValidation } = require('./Validator');
+const { outletValidator } = require('./Validator/outletValidation');
+const {menuValidator} = require('./Validator/menuValidation')
+
+
+Router.post('/CreateOutlet',outletValidator,runValidation,passport.authenticate('jwt',{session:false}),createOutlet);
 
 Router.get('/GetOutlet',passport.authenticate('jwt',{session:false}),getAllOutlet);
 Router.get('/GetOutletNumber',passport.authenticate('jwt',{session:false}),getOutletNumber);
@@ -15,7 +21,7 @@ Router.post('/AddWorker',passport.authenticate('jwt',{session:false}),AddWorker)
 Router.delete('/DeleteWorker',passport.authenticate('jwt',{session:false}),deleteWorker)
 
 //Menu
-Router.post('/AddMenu',passport.authenticate('jwt',{session:false}),AddMenu);
+Router.post('/AddMenu',outletValidator,runValidation,passport.authenticate('jwt',{session:false}),AddMenu);
 Router.get('/GetMenu',passport.authenticate('jwt',{session:false}),GetMenu);
 Router.delete('/DeleteMenu',passport.authenticate('jwt',{session:false}),DeleteMenu);
 Router.put('/UpdateMenu',passport.authenticate('jwt',{session:false}),UpdateMenu);

@@ -16,7 +16,7 @@ exports.signUp = async (req, res) => {
   try {
     const { firstName, lastName, password, email, role } = req.body;
     const getUser = await user.findFirst({
-      where: { email: email },
+      where: { email: email.toLowerCase() },
     });
     if (getUser) {
       return res.status(400).json({ message: "Email already exists" });
@@ -38,7 +38,7 @@ exports.signUp = async (req, res) => {
                   data: {
                     firstName,
                     lastName,
-                    email,
+                    email:email.toLowerCase(),
                     role,
                     password: hashedpassword,
                     resetPasswordLink : ''
@@ -86,7 +86,7 @@ exports.Activateaccount = async (req, res) => {
       const { email } = jwt.decode(token);
       const data = await user.findFirst({
         where: {
-          email,
+          email:email.toLowerCase()
         },
         select: {
           isActivate: true,
@@ -126,7 +126,7 @@ exports.Login = async (req, res) => {
   try {
     const findUserbyEmail = await user.findFirst({
       where: {
-        email,
+        email :email.toLowerCase(),
       },
     });
     if (!findUserbyEmail) {
@@ -136,7 +136,7 @@ exports.Login = async (req, res) => {
         id: findUserbyEmail.id,
         firstName: findUserbyEmail.firstName,
         lastName: findUserbyEmail.lastName,
-        email: findUserbyEmail.email,
+        email: findUserbyEmail.email.toLocaleLowerCase(),
         isActivate: findUserbyEmail.isActivate,
         role: findUserbyEmail.role,
         post : findUserbyEmail.Post,

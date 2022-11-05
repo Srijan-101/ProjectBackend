@@ -1,6 +1,9 @@
 
 const { PrismaClient } = require("@prisma/client");
-const { user, outlet, menu, menuItem, customerTable ,orderItem} = new PrismaClient();
+const { user, outlet, menu, menuItem, customerTable, orderItem } = new PrismaClient();
+
+const { body, validationResult } = require('express-validator');
+
 
 
 //createOutlet
@@ -11,7 +14,6 @@ exports.createOutlet = async (req, res) => {
             where: { email: ManagerEmail },
             select: { Post: true }
         })
-
         if (!getUser) { return res.status(400).json({ message: "No worker found assoicated with this email address" }) };
         if (getUser.Post === "Manager") { return res.status(400).json({ message: "Worker associated with this email is manager of another outlet" }) }
         else {
@@ -21,6 +23,7 @@ exports.createOutlet = async (req, res) => {
                         outletName,
                         location,
                         phone: phoneNumber,
+                        AdminId : req.user.id
                     }, select: {
                         id: true
                     }
@@ -53,43 +56,45 @@ exports.createOutlet = async (req, res) => {
     }
 }
 
-//getOutlet
+
+
+
+
+//getOutlet  
 exports.getAllOutlet = async (req, res) => {
-    const { email } = req.body
     try {
-        const confirmUser = await user.findFirst({
-            where: { email },
-            select: { firstName: true, role: true, email: true, lastName: true }
-        })
-        if (confirmUser.role === "Admin") {
-            const outletInfo = await outlet.findMany({
-                select: {
-                    id: true,
-                    outletName: true,
-                    location: true,
-                    phone: true,
-                    Worker: {
-                        where: {
-                            Post: "Manager"
-                        },
-                        select: {
-                            firstName: true,
-                            lastName: true,
-                            email: true,
-                        }
+        const getData = await outlet.findMany({
+            select: {
+                id: true,
+                outletName: true,
+                location: true,
+                phone: true,
+                Worker: {
+                    where: {
+                        Post: "Manager"
+                    },
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                        email: true,
                     }
                 }
-            })
-            if (outletInfo) res.status(200).json(outletInfo)
-        } else {
-            return res.status(400).json({ error: "Acess denied" });
-        }
+            },
+            where: {
+                AdminId : req.user.id
+            }
+        })
+        console.log(getData);
+        if (getData) res.status(200).json(getData)
+        else res.status(200).json({ error: "Acess denied" });
     } catch (e) {
+        console.log(e);
         return res.status(400).json({ error: "Server error.Please try again later." });
     }
 }
 
-//getOutletNumber 
+
+
 exports.getOutletNumber = async (req, res) => {
     const { email } = req.body
     try {
@@ -97,7 +102,6 @@ exports.getOutletNumber = async (req, res) => {
             where: { email },
             select: { firstName: true, role: true, email: true, lastName: true }
         })
-        if (confirmUser.role === "Admin") {
             const outletInfo = await outlet.findMany({
                 select: {
                     id: true,
@@ -114,56 +118,55 @@ exports.getOutletNumber = async (req, res) => {
                             email: true,
                         }
                     }
-                }
+                },where : {AdminId :req.user.id}
             })
             if (outletInfo) res.status(200).json(outletInfo.length)
-        } else {
-            return res.status(400).json({ error: "Acess denied" });
-        }
+            else {return res.status(200).json(0)}
     } catch (e) {
         return res.status(400).json({ error: "Server error.Please try again later." });
     }
 }
 
 
-//getAllworkerDetails
-exports.getAllWorkerDetails = async (req, res) => {
-    const { email } = req.body
-    try {
 
-        const confirmUser = await user.findFirst({
-            where: { email },
-            select: { role: true }
-        })
-
-        if (confirmUser.role === "Admin") {
-            const WorkerInfo = await user.findMany({
-                select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                    Post: true,
-                    email: true,
-                    phoneNumber: true,
-                    Outlet: {
-                        select: {
-                            outletName: true,
-                        }
-                    },
+exports.getAllWorkerDetails  = async (req,res) => {
+      try {
+          const WorkerInfo = await outlet.findMany({
+                select  : {
+                      Worker : {
+                          select : {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            Post: true,
+                            email: true,
+                            phoneNumber: true,
+                            Outlet : {
+                                 select : {
+                                     outletName : true
+                                 }
+                            }
+                          },
+                          where : {
+                            role: "Worker",
+                            isActivate: true
+                          }
+                      }
                 },
-                where: {
-                    role: "Worker",
-                    isActivate: true
+                where : {
+                     AdminId : req.user.id
                 }
-            })
-            if (WorkerInfo) res.status(200).json(WorkerInfo)
-        } else {
-            return res.status(400).json({ error: "Acess denied" });
-        }
-    } catch (e) {
+          })
+          if (WorkerInfo) res.status(200).json(WorkerInfo)
+          else return res.status(400).json({ error: "Acess denied" });
+      }catch(e) {
+        console.log(e);
         return res.status(400).json({ error: "Server error.Please try again later." });
-    }
+      }
 }
+
+
+
 
 //AddWorker - by Manager
 exports.AddWorker = async (req, res) => {
@@ -185,9 +188,9 @@ exports.AddWorker = async (req, res) => {
 
             if (userR) {
                 console.log(userR);
-                if (userR.outletId || userR.role == "Admin" ) {
+                if (userR.outletId || userR.role == "Admin") {
                     return res.status(400).json({ error: "This worker is already working at an outlet." });
-                } else if(userR.outletId && !userR.Post) {
+                } else if (userR.outletId && !userR.Post) {
                     return res.status(400).json({ error: "This worker is already working at an outlet." });
                 } else {
                     await user.update({
@@ -296,7 +299,7 @@ exports.AddMenu = async (req, res) => {
                                     price: Price,
                                     Status: 'Available',
                                     Category,
-                                
+
                                 }
                             }
                         }
@@ -318,7 +321,7 @@ exports.AddMenu = async (req, res) => {
                                     price: Price,
                                     Status: 'Available',
                                     Category,
-                                 
+
                                 }
                             }
                         },
@@ -454,29 +457,29 @@ exports.GetTable = async (req, res) => {
 
 exports.DeleteTable = async (req, res) => {
     try {
-        
+
         const Table = await customerTable.delete({
-                where : {
-                     id : req.body.id,
-                     
-                },
-                select : {
-                    id : true,
-                    OrderItem : true
-                }
-        }) 
+            where: {
+                id: req.body.id,
+
+            },
+            select: {
+                id: true,
+                OrderItem: true
+            }
+        })
 
         Table?.OrderItem?.map(async (ele) => {
             await orderItem.delete({
-                where : {
-                    id : `${ele.id}`
+                where: {
+                    id: `${ele.id}`,
                 }
             })
         })
 
-        if(Table) {
-            return res.status(200).json({message: "Sucessful" });
-        }else {
+        if (Table) {
+            return res.status(200).json({ message: "Sucessful" });
+        } else {
             return res.status(400).json({ error: "Server error.Please try again later." });
         }
     } catch (e) {
@@ -486,30 +489,23 @@ exports.DeleteTable = async (req, res) => {
 }
 
 
+/*
+exports.DeleteOutlet = async (req,res) => {
+        try {
 
+             await outlet.delete({
+                  where : {
+                       AND : [
+                          {id : req.body.id},
+                          {AdminId : req.user.id}
+                       ]
+                  },
+                  select : {id : true}
+              })
 
-//generateBills
-exports.GenerateBills = async (req, res) => {
-
+        }catch(e){
+            return res.status(400).json({ error: "Server error.Please try again later." });
+        }
 }
-
-//IndividualSaleWithReceiptId
-exports.GenerateBills = async (req, res) => {
-
-}
-
-
-exports.getTotalSales = async (req, res) => {
-
-}
-
-//
-exports.getTotalSalesbyId = async (req, res) => {
-
-}
-
-
-exports.getMonthlySalesbyId = async (req, res) => {
-
-}
+*/
 
